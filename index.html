@@ -171,7 +171,7 @@
       Esto asegura que 'lucide' y 'jsPDF' estén definidos
       antes de que 'DOMContentLoaded' intente usarlos.
     -->
-    <script src="https://unpkg.com/lucide-icons"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
@@ -238,7 +238,9 @@
                 
                 variablesContainer.appendChild(newVariable);
                 addDimension(dimensionsContainer); // Añadir una dimensión por defecto
-                lucide.createIcons(); // Refrescar iconos
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons(); // Refrescar iconos
+                }
             }
 
             // Añadir Dimensión
@@ -248,7 +250,9 @@
                     e.target.closest('.dimension-group').remove();
                 });
                 container.appendChild(newDimension);
-                lucide.createIcons(); // Refrescar iconos
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons(); // Refrescar iconos
+                }
             }
 
             // Actualizar Nombres de Niveles
