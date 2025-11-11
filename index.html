@@ -109,6 +109,10 @@
                             <i data-lucide="copy" class="w-5 h-5"></i>
                             Copiar
                         </button>
+                        <button id="excelBtn" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-150 shadow-sm">
+                            <i data-lucide="sheet" class="w-5 h-5"></i>
+                            Excel
+                        </button>
                         <button id="pdfBtn" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-150 shadow-sm">
                             <i data-lucide="file-down" class="w-5 h-5"></i>
                             PDF
@@ -174,6 +178,7 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
         // FIX: Cambiar de 'DOMContentLoaded' a 'load'.
@@ -195,6 +200,7 @@
             const resultsContainer = document.getElementById('resultsContainer');
             const resultsTable = document.getElementById('resultsTable');
             const copyBtn = document.getElementById('copyBtn');
+            const excelBtn = document.getElementById('excelBtn');
             const pdfBtn = document.getElementById('pdfBtn');
             const copyMessage = document.getElementById('copyMessage');
             
@@ -522,11 +528,27 @@
                 doc.save('rangos_test_calculados.pdf');
             }
 
+            // Descargar Excel (.xlsx)
+            function downloadExcel() {
+                const table = document.getElementById('resultsTable');
+                if (!table) {
+                    console.error("No se encontró la tabla de resultados.");
+                    return;
+                }
+
+                // Convertir la tabla HTML a una hoja de cálculo de SheetJS
+                const workbook = XLSX.utils.table_to_book(table, {sheet: "Resultados"});
+
+                // Generar el archivo .xlsx y descargarlo
+                XLSX.writeFile(workbook, 'reporte_tabla.xlsx');
+            }
+
 
             // --- Event Listeners Iniciales ---
             addVariableBtn.addEventListener('click', addVariable);
             generateBtn.addEventListener('click', generateTable);
             copyBtn.addEventListener('click', copyTable);
+            excelBtn.addEventListener('click', downloadExcel);
             pdfBtn.addEventListener('click', downloadPDF);
             
             levelCountEl.addEventListener('change', (e) => {
