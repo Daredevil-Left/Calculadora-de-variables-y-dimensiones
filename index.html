@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Rangos de Test</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 
+      NOTA: Los scripts de JS (Lucide, jsPDF) se movieron 
+      al final del <body> para solucionar el error de carga. 
+    -->
+
+    <style>
+        /* Estilo para los botones de añadir/quitar */
+        .action-btn {
+            @apply p-1.5 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-all duration-150;
+        }
+        .remove-btn {
+            @apply p-1.5 bg-red-50 text-red-500 rounded-md hover:bg-red-100 transition-all duration-150;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        
+        <!-- Encabezado -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Calculadora de Rangos de Test (Mín/Máx)</h1>
+            <p class="text-lg text-gray-600 mt-2">Define la estructura, calcula rangos Mín/Máx y divídelos en niveles cualitativos.</p>
+        </header>
+
+        <!-- Contenedor Principal -->
+        <div class="grid grid-cols-1 gap-8">
+            
+            <!-- Columna Superior: Configuración -->
+            <div class="space-y-6">
+                
+                <!-- Paso 1: Escala de Ítems -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">Paso 1: Define la Escala de Puntuación (por ítem)</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="minScore" class="block text-sm font-medium text-gray-700">Puntaje Mínimo (ej. 1)</label>
+                            <input type="number" id="minScore" value="1" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="maxScore" class="block text-sm font-medium text-gray-700">Puntaje Máximo (ej. 5)</label>
+                            <input type="number" id="maxScore" value="5" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Estructura del Test -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h2 class="text-xl font-semibold text-gray-700">Paso 2: Define la Estructura del Test</h2>
+                        <button id="addVariableBtn" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-150 shadow-sm">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            Añadir Variable
+                        </button>
+                    </div>
+                    <div id="variablesContainer" class="space-y-6">
+                        <!-- Plantilla de Variable (se clona con JS) -->
+                    </div>
+                </div>
+
+                <!-- Paso 3: Definir Niveles -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">Paso 3: Define los Niveles Cualitativos</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="levelCount" class="block text-sm font-medium text-gray-700">Cantidad de Niveles</label>
+                            <select id="levelCount" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                <option value="2">2 Niveles (Sistema Dicotómico)</option>
+                                <option value="3" selected>3 Niveles (Sistema Tricotómico)</option>
+                                <option value="4">4 Niveles (Sistema Tetracotómico / Cuartiles)</option>
+                                <option value="5">5 Niveles (Sistema Pentacotómico)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="levelTemplate" class="block text-sm font-medium text-gray-700">Plantillas de Nombres</label>
+                            <select id="levelTemplate" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                <!-- Opciones se generan dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+                    <div id="levelNamesContainer" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <!-- Nombres de niveles se generan dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Botón de Generar -->
+                <button id="generateBtn" class="w-full flex items-center justify-center gap-2 bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-all duration-150 shadow-lg text-lg font-semibold">
+                    <i data-lucide="table" class="w-6 h-6"></i>
+                    Generar Tabla de Rangos y Niveles
+                </button>
+
+            </div>
+
+            <!-- Columna Inferior: Resultados -->
+            <div id="resultsContainer" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 border-b pb-2">
+                    <h2 class="text-2xl font-semibold text-gray-800">Resultados: Tabla de Rangos y Niveles</h2>
+                    <div class="flex items-center gap-3 mt-4 md:mt-0">
+                        <button id="copyBtn" class="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-all duration-150 shadow-sm">
+                            <i data-lucide="copy" class="w-5 h-5"></i>
+                            Copiar
+                        </button>
+                        <button id="pdfBtn" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-150 shadow-sm">
+                            <i data-lucide="file-down" class="w-5 h-5"></i>
+                            PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table id="resultsTable" class="min-w-full divide-y divide-gray-200 border border-gray-200">
+                        <thead class="bg-gray-50">
+                            <!-- Encabezados se generan dinámicamente -->
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- Filas se generan dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <p id="copyMessage" class="text-green-600 mt-4 text-sm hidden">¡Tabla copiada al portapapeles!</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Plantilla de Variable (Oculta) -->
+    <template id="variableTemplate">
+        <div class="variable-group border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-3">
+            <div class="flex justify-between items-center">
+                <input type="text" placeholder="Nombre de la Variable (ej. Ansiedad)" class="variable-name w-1/2 p-2 border border-gray-300 rounded-md font-semibold text-lg focus:ring-2 focus:ring-blue-500">
+                <button class="remove-variable-btn remove-btn">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="dimensions-container space-y-2 pl-4 border-l-2 border-blue-200">
+                <!-- Dimensiones se añadirán aquí -->
+            </div>
+            <button class="add-dimension-btn action-btn flex items-center gap-2 text-sm ml-4">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Añadir Dimensión
+            </button>
+        </div>
+    </template>
+
+    <!-- Plantilla de Dimensión (Oculta) -->
+    <template id="dimensionTemplate">
+        <div class="dimension-group flex items-center gap-3">
+            <input type="text" placeholder="Nombre de la Dimensión (ej. Cognitiva)" class="dimension-name w-1/2 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-gray-700">Ítems:</label>
+                <input type="number" value="5" min="1" class="dimension-items w-20 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button class="remove-dimension-btn remove-btn">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </template>
+
+
+    <!-- 
+      FIX: Mover los scripts externos aquí, antes del script principal.
+      Esto asegura que 'lucide' y 'jsPDF' estén definidos
+      antes de que 'DOMContentLoaded' intente usarlos.
+    -->
+    <script src="https://unpkg.com/lucide-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // FIX: Cambiar de 'DOMContentLoaded' a 'load'.
+        // 'load' espera a que TODOS los recursos (incluyendo scripts externos como lucide)
+        // se carguen antes de ejecutar el código.
+        window.addEventListener('load', (event) => {
+
+            // --- Selectores de Elementos ---
+            const minScoreEl = document.getElementById('minScore');
+            const maxScoreEl = document.getElementById('maxScore');
+            const addVariableBtn = document.getElementById('addVariableBtn');
+            const variablesContainer = document.getElementById('variablesContainer');
+            const variableTemplate = document.getElementById('variableTemplate');
+            const dimensionTemplate = document.getElementById('dimensionTemplate');
+            const levelCountEl = document.getElementById('levelCount');
+            const levelTemplateEl = document.getElementById('levelTemplate');
+            const levelNamesContainer = document.getElementById('levelNamesContainer');
+            const generateBtn = document.getElementById('generateBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsTable = document.getElementById('resultsTable');
+            const copyBtn = document.getElementById('copyBtn');
+            const pdfBtn = document.getElementById('pdfBtn');
+            const copyMessage = document.getElementById('copyMessage');
+            
+            // --- Definición de Plantillas de Niveles ---
+            const levelTemplates = {
+                2: [
+                    { name: 'Bajo / Alto', values: ['Bajo', 'Alto'] },
+                    { name: 'Apto / No Apto', values: ['No Apto', 'Apto'] },
+                    { name: 'Presencia / Ausencia', values: ['Ausencia', 'Presencia'] },
+                    { name: 'Normal / Patológico', values: ['Normal', 'Patológico'] }
+                ],
+                3: [
+                    { name: 'Bajo / Medio / Alto', values: ['Bajo', 'Medio', 'Alto'] },
+                    { name: 'Inferior / Promedio / Superior', values: ['Inferior', 'Promedio', 'Superior'] },
+                    { name: 'Riesgo / Alerta / Seguro', values: ['Riesgo', 'Alerta', 'Seguro'] }
+                ],
+                4: [
+                    { name: 'Q1 / Q2 / Q3 / Q4', values: ['Q1 (Bajo)', 'Q2 (Prom. Inf.)', 'Q3 (Prom. Sup.)', 'Q4 (Alto)'] },
+                    { name: 'Nivel 1 / 2 / 3 / 4', values: ['Nivel 1', 'Nivel 2', 'Nivel 3', 'Nivel 4'] }
+                ],
+                5: [
+                    { name: 'Muy Bajo / Bajo / Medio / Alto / Muy Alto', values: ['Muy Bajo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'] },
+                    { name: 'Deficiente / Inf. Promedio / Promedio / Sup. Promedio / Superior', values: ['Deficiente', 'Inf. al Promedio', 'Promedio', 'Sup. al Promedio', 'Superior'] }
+                ]
+            };
+
+            // --- Funciones de Lógica ---
+
+            // Añadir Variable
+            function addVariable() {
+                const newVariable = variableTemplate.content.cloneNode(true);
+                const dimensionsContainer = newVariable.querySelector('.dimensions-container');
+                
+                newVariable.querySelector('.add-dimension-btn').addEventListener('click', () => {
+                    addDimension(dimensionsContainer);
+                });
+                
+                newVariable.querySelector('.remove-variable-btn').addEventListener('click', (e) => {
+                    e.target.closest('.variable-group').remove();
+                });
+                
+                variablesContainer.appendChild(newVariable);
+                addDimension(dimensionsContainer); // Añadir una dimensión por defecto
+                lucide.createIcons(); // Refrescar iconos
+            }
+
+            // Añadir Dimensión
+            function addDimension(container) {
+                const newDimension = dimensionTemplate.content.cloneNode(true);
+                newDimension.querySelector('.remove-dimension-btn').addEventListener('click', (e) => {
+                    e.target.closest('.dimension-group').remove();
+                });
+                container.appendChild(newDimension);
+                lucide.createIcons(); // Refrescar iconos
+            }
+
+            // Actualizar Nombres de Niveles
+            function updateLevelNames(count) {
+                levelNamesContainer.innerHTML = '';
+                const templates = levelTemplates[count];
+                
+                // Actualizar plantillas
+                levelTemplateEl.innerHTML = '';
+                templates.forEach((template, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = template.name;
+                    levelTemplateEl.appendChild(option);
+                });
+
+                // Cargar la primera plantilla por defecto
+                loadLevelTemplate(templates[0].values);
+            }
+
+            // Cargar Plantilla de Nombres
+            function loadLevelTemplate(names) {
+                levelNamesContainer.innerHTML = '';
+                names.forEach(name => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label class="block text-sm font-medium text-gray-700">${name}</label>
+                        <input type="text" value="${name}" class="level-name w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    `;
+                    levelNamesContainer.appendChild(div);
+                });
+            }
+
+            // Generar Tabla
+            function generateTable() {
+                // Validar si 'lucide' o 'jsPDF' existen antes de continuar
+                if (typeof lucide === 'undefined' || typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                    // FIX: Reemplazar alert() con un mensaje en la UI
+                    const errorMsg = document.createElement('p');
+                    errorMsg.textContent = "Error: Las bibliotecas (PDF, Iconos) no se cargaron. Revisa tu conexión y refresca la página.";
+                    errorMsg.className = "text-red-600 font-semibold mb-4";
+                    
+                    const existingError = resultsContainer.querySelector('.text-red-600');
+                    if (existingError) existingError.remove();
+                    
+                    resultsContainer.prepend(errorMsg); // Mostrar error
+                    resultsContainer.classList.remove('hidden');
+                    return;
+                }
+
+                const minScore = parseInt(minScoreEl.value);
+                const maxScore = parseInt(maxScoreEl.value);
+                const levelCount = parseInt(levelCountEl.value);
+                const levelNames = Array.from(document.querySelectorAll('.level-name')).map(input => input.value);
+                
+                if (isNaN(minScore) || isNaN(maxScore) || minScore >= maxScore) {
+                    // Reemplazar alert con un mensaje en la UI
+                    const errorMsg = document.createElement('p');
+                    errorMsg.textContent = "Error: Define un rango de puntuación válido (Mínimo debe ser menor que Máximo).";
+                    errorMsg.className = "text-red-600 font-semibold mb-4";
+                    
+                    const existingError = resultsContainer.querySelector('.text-red-600');
+                    if (existingError) existingError.remove();
+                    
+                    resultsContainer.prepend(errorMsg); // Mostrar error
+                    resultsContainer.classList.remove('hidden');
+                    return;
+                } else {
+                    const existingError = resultsContainer.querySelector('.text-red-600');
+                    if (existingError) existingError.remove();
+                }
+
+                resultsContainer.classList.remove('hidden');
+                
+                // --- Crear Encabezados ---
+                resultsTable.querySelector('thead')?.remove(); // Limpiar thead anterior
+                const thead = document.createElement('thead');
+                thead.className = "bg-gray-100";
+                let headerHTML = '<tr>';
+                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Variable</th>';
+                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Dimensión</th>';
+                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Ítems</th>';
+                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">P. Mín</th>';
+                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">P. Máx</th>';
+                
+                levelNames.forEach(name => {
+                    headerHTML += `<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-blue-800 bg-blue-50 uppercase tracking-wider">${name}</th>`;
+                });
+                headerHTML += '</tr>';
+                thead.innerHTML = headerHTML;
+                resultsTable.appendChild(thead);
+
+                // --- Crear Cuerpo de la Tabla ---
+                resultsTable.querySelector('tbody')?.remove(); // Limpiar tbody anterior
+                const tbody = document.createElement('tbody');
+                tbody.className = "bg-white divide-y divide-gray-200";
+
+                const variables = variablesContainer.querySelectorAll('.variable-group');
+                
+                variables.forEach(variable => {
+                    const varName = variable.querySelector('.variable-name').value || 'Variable (Sin nombre)';
+                    const dimensions = variable.querySelectorAll('.dimension-group');
+                    let totalVarItems = 0;
+                    
+                    dimensions.forEach((dim, index) => {
+                        const dimName = dim.querySelector('.dimension-name').value || 'Dimensión (Sin nombre)';
+                        const items = parseInt(dim.querySelector('.dimension-items').value) || 0;
+                        totalVarItems += items;
+
+                        const minDimScore = items * minScore;
+                        const maxDimScore = items * maxScore;
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${index === 0 ? 'text-gray-900' : 'text-gray-400'}">${index === 0 ? varName : '↳'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${dimName}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${items}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">${minDimScore}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">${maxDimScore}</td>
+                            ${calculateLevelRanges(minDimScore, maxDimScore, levelCount)}
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    // --- Fila de Total por Variable ---
+                    const totalMinScore = totalVarItems * minScore;
+                    const totalMaxScore = totalVarItems * maxScore;
+                    const totalRow = document.createElement('tr');
+                    totalRow.className = "bg-gray-50 font-bold";
+                    totalRow.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Total ${varName}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">-</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalVarItems}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalMinScore}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalMaxScore}</td>
+                        ${calculateLevelRanges(totalMinScore, totalMaxScore, levelCount)}
+                    `;
+                    tbody.appendChild(totalRow);
+                });
+                
+                resultsTable.appendChild(tbody);
+                
+                // Desplazarse a los resultados
+                resultsContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Calcular Rangos de Niveles
+            function calculateLevelRanges(min, max, count) {
+                let html = '';
+                const totalRange = (max - min) + 1;
+                // Usar Math.floor para la división base
+                const baseRangePerLevel = Math.floor(totalRange / count);
+                // Calcular cuántos niveles necesitan un punto extra
+                let extraPoints = totalRange % count;
+                
+                let currentMin = min;
+
+                for (let i = 0; i < count; i++) {
+                    // Añadir el rango base
+                    let currentMax = currentMin + baseRangePerLevel - 1;
+                    
+                    // Distribuir los puntos extra uno por uno
+                    if (extraPoints > 0) {
+                        currentMax += 1;
+                        extraPoints--;
+                    }
+
+                    // Asegurar que el último nivel termine exactamente en 'max'
+                    if (i === count - 1) {
+                        currentMax = max;
+                    }
+
+                    if (currentMax < currentMin) currentMax = currentMin; // Evitar rangos inválidos (ej. 0 ítems)
+
+                    html += `<td class="px-4 py-3 whitespace-nowrap text-sm text-blue-900 bg-blue-50">${currentMin} - ${currentMax}</td>`;
+                    
+                    // El siguiente mínimo es uno más que el máximo actual
+                    currentMin = currentMax + 1;
+
+                    // Control de desbordamiento (no debería pasar con esta lógica, pero es seguro)
+                    if (currentMin > max && i < count - 1) { 
+                        currentMin = max;
+                    }
+                }
+                return html;
+            }
+
+            // Copiar Tabla (como texto)
+            function copyTable() {
+                let text = '';
+                const table = resultsTable;
+
+                // Headers
+                table.querySelectorAll('thead th').forEach(th => {
+                    text += th.textContent.trim() + '\t'; // Tabulado
+                });
+                text += '\n';
+
+                // Body
+                table.querySelectorAll('tbody tr').forEach(tr => {
+                    tr.querySelectorAll('td').forEach(td => {
+                        text += td.textContent.trim() + '\t';
+                    });
+                    text += '\n';
+                });
+
+                // Usar execCommand para compatibilidad (evita problemas de permisos)
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyMessage.classList.remove('hidden');
+                    setTimeout(() => copyMessage.classList.add('hidden'), 2000);
+                } catch (err) {
+                    console.error('Error al copiar: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+
+            // Descargar PDF (Alta Calidad)
+            function downloadPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'pt',
+                    format: 'a4'
+                });
+
+                doc.autoTable({
+                    html: '#resultsTable',
+                    theme: 'grid', // 'striped', 'grid' or 'plain'
+                    headStyles: {
+                        fillColor: [23, 103, 161], // Color azul oscuro
+                        textColor: [255, 255, 255], // Blanco
+                        fontStyle: 'bold'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 249, 252] // Azul muy claro
+                    },
+                    footStyles: { // Estilo para filas de 'Total'
+                        fillColor: [230, 230, 230], // Gris para totales
+                        fontStyle: 'bold',
+                        textColor: [0, 0, 0]
+                    },
+                    // Aplicar estilo 'foot' a las filas que contienen 'Total'
+                    didParseCell: function (data) {
+                        if (data.row.raw[0]?.textContent.startsWith('Total')) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fillColor = [240, 240, 240];
+                        }
+                    },
+                    margin: { top: 40 },
+                    didDrawPage: function (data) {
+                        // Título
+                        doc.setFontSize(18);
+                        doc.setTextColor(40);
+                        doc.text("Resultados: Tabla de Rangos y Niveles", data.settings.margin.left, 30);
+                    }
+                });
+
+                doc.save('rangos_test_calculados.pdf');
+            }
+
+
+            // --- Event Listeners Iniciales ---
+            addVariableBtn.addEventListener('click', addVariable);
+            generateBtn.addEventListener('click', generateTable);
+            copyBtn.addEventListener('click', copyTable);
+            pdfBtn.addEventListener('click', downloadPDF);
+            
+            levelCountEl.addEventListener('change', (e) => {
+                updateLevelNames(e.target.value);
+            });
+            
+            levelTemplateEl.addEventListener('change', (e) => {
+                const count = levelCountEl.value;
+                const templateIndex = e.target.value;
+                const names = levelTemplates[count][templateIndex].values;
+                loadLevelTemplate(names);
+            });
+
+            // --- Inicialización ---
+            
+            // Comprobar si 'lucide' está cargado antes de usarlo
+            if (typeof lucide !== 'undefined') {
+                addVariable(); // Añadir una variable por defecto al cargar
+                updateLevelNames(levelCountEl.value); // Inicializar nombres de niveles
+                lucide.createIcons(); // Cargar iconos iniciales
+            } else {
+                console.error("Lucide icons no se cargó a tiempo.");
+                // Mostrar un error visual si lucide no carga
+                const configContainer = document.querySelector('.space-y-6');
+                if (configContainer) {
+                    const errorMsg = document.createElement('p');
+                    errorMsg.textContent = "Error: No se pudieron cargar los íconos (lucide). Por favor, revisa tu conexión y refresca la página.";
+                    errorMsg.className = "text-red-600 font-semibold p-4 bg-red-50 rounded-lg border border-red-200";
+                    configContainer.prepend(errorMsg);
+                }
+            }
+
+        }); // Fin de window.load
+    </script>
+
+</body>
+</html>
