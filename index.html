@@ -341,8 +341,6 @@
                 headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Variable</th>';
                 headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Dimensión</th>';
                 headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Ítems</th>';
-                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">P. Mín</th>';
-                headerHTML += '<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">P. Máx</th>';
                 
                 levelNames.forEach(name => {
                     headerHTML += `<th scope="col" class="px-4 py-3 text-left text-xs font-bold text-blue-800 bg-blue-50 uppercase tracking-wider">${name}</th>`;
@@ -376,8 +374,6 @@
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${index === 0 ? 'text-gray-900' : 'text-gray-400'}">${index === 0 ? varName : '↳'}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${dimName}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${items}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">${minDimScore}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">${maxDimScore}</td>
                             ${calculateLevelRanges(minDimScore, maxDimScore, levelCount)}
                         `;
                         tbody.appendChild(row);
@@ -392,8 +388,6 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">Total ${varName}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">-</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalVarItems}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalMinScore}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${totalMaxScore}</td>
                         ${calculateLevelRanges(totalMinScore, totalMaxScore, levelCount)}
                     `;
                     tbody.appendChild(totalRow);
