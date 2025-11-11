@@ -501,7 +501,11 @@
                     },
                     // Aplicar estilo 'foot' a las filas que contienen 'Total'
                     didParseCell: function (data) {
-                        if (data.row.raw[0]?.textContent.startsWith('Total')) {
+                        // FIX: Comprobar el contenido de la celda de forma segura.
+                        // data.row.cells[0] se refiere a la primera celda de la fila.
+                        // Su propiedad '.text' es un array con el texto de la celda.
+                        const firstCellText = data.row.cells[0]?.text?.[0] || '';
+                        if (firstCellText.trim().startsWith('Total')) {
                             data.cell.styles.fontStyle = 'bold';
                             data.cell.styles.fillColor = [240, 240, 240];
                         }
