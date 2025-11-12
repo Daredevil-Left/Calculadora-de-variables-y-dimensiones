@@ -361,6 +361,7 @@
                     const dimensions = variable.querySelectorAll('.dimension-group');
                     let totalVarItems = 0;
                     
+                    const numDimensions = dimensions.length > 0 ? dimensions.length : 1;
                     dimensions.forEach((dim, index) => {
                         const dimName = dim.querySelector('.dimension-name').value || 'Dimensión (Sin nombre)';
                         const items = parseInt(dim.querySelector('.dimension-items').value) || 0;
@@ -370,12 +371,20 @@
                         const maxDimScore = items * maxScore;
 
                         const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${index === 0 ? 'text-gray-900' : 'text-gray-400'}">${index === 0 ? varName : '↳'}</td>
+
+                        let dimensionHTML = '';
+                        // If it's the first row of the variable, add the cell with rowspan
+                        if (index === 0) {
+                            dimensionHTML += `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-center align-middle" rowspan="${numDimensions}">${varName}</td>`;
+                        }
+
+                        dimensionHTML += `
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${dimName}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${items}</td>
                             ${calculateLevelRanges(minDimScore, maxDimScore, levelCount)}
                         `;
+
+                        row.innerHTML = dimensionHTML;
                         tbody.appendChild(row);
                     });
 
@@ -499,12 +508,16 @@
                         fontStyle: 'bold',
                         textColor: [0, 0, 0]
                     },
-                    // Aplicar estilo 'foot' a las filas que contienen 'Total'
                     didParseCell: function (data) {
+                        const firstCellText = data.row.cells[0]?.text?.[0] || '';
+                        if (data.column.dataKey === 0 && !firstCellText.trim().startsWith('Total')) {
+                            data.cell.styles.valign = 'middle';
+                            data.cell.styles.halign = 'center';
+                        }
+
                         // FIX: Comprobar el contenido de la celda de forma segura.
                         // data.row.cells[0] se refiere a la primera celda de la fila.
                         // Su propiedad '.text' es un array con el texto de la celda.
-                        const firstCellText = data.row.cells[0]?.text?.[0] || '';
                         if (firstCellText.trim().startsWith('Total')) {
                             data.cell.styles.fontStyle = 'bold';
                             data.cell.styles.fillColor = [240, 240, 240];
